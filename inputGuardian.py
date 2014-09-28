@@ -35,13 +35,16 @@ class InputGuardian:
 
         if len(procList) > 1:
             time = 10 # time in seconds
-            call(['notify-send', 'Warning!', 'Keylogger detected!', '-i', '/home/net/Code/input-guardian/icons/warning.png', '-u', 'critical', '-t', str(time * 1000) ])
+            self.showMessage('Keylogger detected!', 20)
 
         for procID, path in procList.iteritems():
             procName = self.getProcessName(procID)
             if procName != 'xorg':
                 call(['kill', procID])
-                call(['notify-send', 'Warning!', 'Killed process ' + procName + ' with pid ' + procID, '-i', '/home/net/Code/input-guardian/icons/warning.png', '-u', 'critical', '-t', str(time * 1000) ])
+                self.showMessage('Killed keylogger with process ' + procName + ' and pid ' + procID, 30)
+
+    def showMessage(self, message, time):
+        call(['notify-send', 'InputGuardian', message, '-i', '/home/net/Code/input-guardian/icons/warning.png', '-u', 'critical', '-t', str(time * 1000) ])
 
     def getProcessList(self):
         procList = {}
