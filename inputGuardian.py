@@ -38,5 +38,15 @@ class InputGuardian:
                     continue
                 print pid, link
 
+    def getEventPath(self):
+        result = False
+        with open(self.xorgLog, 'r') as content:
+            for line in content:
+                if line.find('evdev') != -1 and line.find('keyboard') != -1:
+                    path = re.search(r'\/dev\/input\/event[0-9]', line)
+                    if path:
+                        result = str(path.group(0))
+        return result
+
 inputGuardian = InputGuardian()
 inputGuardian.watch()
