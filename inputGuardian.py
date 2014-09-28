@@ -10,6 +10,17 @@ try:
 except ImportError:
     print 'Failed to import module re'
 
+try:
+    from subprocess import call
+except ImportError:
+    print 'Failed to import module call'
+
+
+'''
+/etc/modprobe.d/blacklist.conf
+pcspkr
+'''
+
 class InputGuardian:
 
     procPath = None
@@ -20,6 +31,20 @@ class InputGuardian:
         self.xorgLog = '/var/log/Xorg.0.log'
 
     def watch(self):
+        procList = self.getProcessList()
+
+        if len(procList) > 1:
+            time = 10 # time in seconds
+            call(['notify-send', 'Warning!', 'Keylogger detected!', '-i', '/home/net/Code/input-guardian/icons/warning.png', '-u', 'critical', '-t', str(time * 1000) ])
+
+        for procID, path in procList.iteritems():
+            procName = self.getProcessName(procID)
+            if procName != 'xorg':
+                call(['kill', procID])
+                call(['notify-send', 'Warning!', 'Killed process ' + procName + ' with pid ' + procID, '-i', '/home/net/Code/input-guardian/icons/warning.png', '-u', 'critical', '-t', str(time * 1000) ])
+
+    def getProcessList(self):
+        procList = {}
         pids = os.listdir('/proc')
 
         for pid in sorted(pids):
@@ -36,7 +61,17 @@ class InputGuardian:
                     link = os.readlink(os.path.join(fd_dir, file))
                 except OSError:
                     continue
-                print pid, link
+                if link == self.getEventPath():
+                    procList[pid] = link
+
+        return procList
+
+    def getProcessName(self, procID):
+        with open('/proc/' + procID + '/stat', 'r') as procStatus:
+            result = re.search(r'\([a-zA-Z]*\)', procStatus.read())
+            if result:
+                return str(result.group(0))[1:-1].lower()
+
 
     def getEventPath(self):
         result = False
