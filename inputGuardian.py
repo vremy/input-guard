@@ -15,36 +15,50 @@ try:
 except ImportError:
     print 'Failed to import module call'
 
+try:
+    import threading
+except ImportError:
+    print 'Failed to import module threading'
 
-'''
-/etc/modprobe.d/blacklist.conf
-pcspkr
-'''
+try:
+    import datetime
+except ImportError:
+    print 'Failed to import module datetime'
+
+try:
+    from random import randrange
+except ImportError:
+    print 'Failed to import module randrange'
 
 class InputGuardian:
 
     procPath = None
     xorgLog = None
+    datetimestamp = None
 
     def __init__(self):
         self.procPath = '/pro'
         self.xorgLog = '/var/log/Xorg.0.log'
+        self.datetimestamp = datetime.datetime.now()
 
     def watch(self):
-        procList = self.getProcessList()
+        while True:
+            procList = self.getProcessList()
 
-        if len(procList) > 1:
-            time = 10 # time in seconds
-            self.showMessage('Keylogger detected!', 20)
+            if len(procList) > 1:
+                time = 10 # time in seconds
+                self.showMessage('Keylogger detected!', 20)
 
-        for procID, path in procList.iteritems():
-            procName = self.getProcessName(procID)
-            if procName != 'xorg':
-                call(['kill', procID])
-                self.showMessage('Killed keylogger with process ' + procName + ' and pid ' + procID, 30)
+            for procID, path in procList.iteritems():
+                procName = self.getProcessName(procID)
+                if procName != 'xorg':
+                    call(['kill', procID])
+                    message = 'Killed keylogger with process ' + procName + ' and pid ' + procID
+                    print self.datetimestamp.strftime("%Y-%m-%d %H:%M:%S") + ' | ' + message
+                    self.showMessage(message, 60)
 
     def showMessage(self, message, time):
-        call(['notify-send', 'InputGuardian', message, '-i', '/home/net/Code/input-guardian/icons/warning.png', '-u', 'critical', '-t', str(time * 1000) ])
+        call(['notify-send', 'InputGuardian', message, '-i', '/home/net/Code/input-guardian/icons/icon.png', '-u', 'critical', '-t', str(time * 1000) ])
 
     def getProcessList(self):
         procList = {}
@@ -59,14 +73,14 @@ class InputGuardian:
 
             fd_dir = os.path.join('/proc', pid, 'fd')
 
-            for file in os.listdir(fd_dir):
-                try:
-                    link = os.readlink(os.path.join(fd_dir, file))
-                except OSError:
-                    continue
-                if link == self.getEventPath():
-                    procList[pid] = link
-
+            if os.path.exists(fd_dir):
+                for file in os.listdir(fd_dir):
+                    try:
+                        link = os.readlink(os.path.join(fd_dir, file))
+                    except OSError:
+                        continue
+                    if link == self.getEventPath():
+                        procList[pid] = link
         return procList
 
     def getProcessName(self, procID):
@@ -83,8 +97,7 @@ class InputGuardian:
                 if line.find('evdev') != -1 and line.find('keyboard') != -1:
                     path = re.search(r'\/dev\/input\/event[0-9]', line)
                     if path:
-                        result = str(path.group(0))
-        return result
+                        return str(path.group(0))
 
 inputGuardian = InputGuardian()
 inputGuardian.watch()
