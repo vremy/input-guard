@@ -32,63 +32,76 @@ except ImportError:
 
 class InputGuardian:
 
-    procPath = None
+    processPath = None
     xorgLog = None
     datetimestamp = None
 
     def __init__(self):
-        self.procPath = '/pro'
+        self.processPath = '/pro'
         self.xorgLog = '/var/log/Xorg.0.log'
         self.datetimestamp = datetime.datetime.now()
 
     def watch(self):
-        while True:
-            procList = self.getProcessList()
+        '''
+        ASCII Header
+        '''
+        headerMessage  = "\r\n         /\ \r\n"
+        headerMessage += "        /  \ \r\n"
+        headerMessage += "    InputGuardian\r\n"
+        headerMessage += "      / (||) \ \r\n"
+        headerMessage += "     /\  /\  /\ \r\n"
+        headerMessage += "------------------------"
+        print headerMessage
 
-            if len(procList) > 1:
-                time = 10 # time in seconds
+        while True:
+            processList = self.getProcessList()
+
+            if len(processList) > 1:
                 self.showMessage('Keylogger detected!', 20)
 
-            for procID, path in procList.iteritems():
-                procName = self.getProcessName(procID)
-                if procName != 'xorg':
-                    call(['kill', procID])
-                    message = 'Killed keylogger with process ' + procName + ' and pid ' + procID
-                    print self.datetimestamp.strftime("%Y-%m-%d %H:%M:%S") + ' | ' + message
-                    self.showMessage(message, 60)
+                for processID, path in processList.iteritems():
+                    processName = self.getProcessName(processID)
+                    if processName != 'xorg':
+                        exectuableLocation = self.getExecutablePath(processID)
+                        call(['kill', processID])
+                        message = 'Killed keylogger with processName "' + processName + '" and processID ' + processID + ' at location ' + exectuableLocation
+                        print self.datetimestamp.strftime("%Y-%m-%d %H:%M:%S") + ' | ' + message
+                        self.showMessage(message, 60)
 
     def showMessage(self, message, time):
         call(['notify-send', 'InputGuardian', message, '-i', '/home/net/Code/input-guardian/icons/icon.png', '-u', 'critical', '-t', str(time * 1000) ])
 
     def getProcessList(self):
-        procList = {}
-        pids = os.listdir('/proc')
+        processListKeyboard = {}
+        processListAll = os.listdir('/proc')
 
-        for pid in sorted(pids):
+        for processID in sorted(processListAll):
 
             try:
-                int(pid)
+                int(processID)
             except ValueError:
                 continue
 
-            fd_dir = os.path.join('/proc', pid, 'fd')
+            fdDirectory = os.path.join('/proc', processID, 'fd')
 
-            if os.path.exists(fd_dir):
-                for file in os.listdir(fd_dir):
+            if os.path.exists(fdDirectory):
+                for processDirectory in os.listdir(fdDirectory):
                     try:
-                        link = os.readlink(os.path.join(fd_dir, file))
+                        link = os.readlink(os.path.join(fdDirectory, processDirectory))
                     except OSError:
                         continue
                     if link == self.getEventPath():
-                        procList[pid] = link
-        return procList
+                        processListKeyboard[processID] = link
+        return processListKeyboard
 
-    def getProcessName(self, procID):
-        with open('/proc/' + procID + '/stat', 'r') as procStatus:
+    def getProcessName(self, processID):
+        with open('/proc/' + processID + '/stat', 'r') as procStatus:
             result = re.search(r'\([a-zA-Z]*\)', procStatus.read())
             if result:
                 return str(result.group(0))[1:-1].lower()
 
+    def getExecutablePath(self, processID):
+        return os.path.realpath('/proc/' + processID + '/exe')
 
     def getEventPath(self):
         result = False
