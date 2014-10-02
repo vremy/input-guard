@@ -16,11 +16,6 @@ except ImportError:
     print 'Failed to import module call'
 
 try:
-    import threading
-except ImportError:
-    print 'Failed to import module threading'
-
-try:
     import datetime
 except ImportError:
     print 'Failed to import module datetime'
@@ -35,34 +30,19 @@ try:
 except ImportError:
     print 'Failed to import module ConfigParser'
 
+
 class InputGuardian:
 
-    processPath = None
+    config = None
     xorgLog = None
+    whitelist = None
+    processPath = None
+    dependencies = None
+
+    root = None
     datetimestamp = None
 
     def __init__(self):
-        self.processPath = '/pro'
-        self.xorgLog = '/var/log/Xorg.0.log'
-        self.datetimestamp = datetime.datetime.now()
-
-    def watch(self):
-        whitelist = None
-
-        try:
-            Config = ConfigParser.ConfigParser()
-            Config.read('config.ini');
-            whitelist =  Config.get('config', 'whitelist').split(',')
-        except:
-            print 'Whitelist not available'
-
-        '''
-        processList = self.getProcessList()
-        for processID, path in processList.iteritems():
-            print self.getProcessName(processID)
-        return False
-        '''
-
         '''
         ASCII Header
         '''
@@ -71,8 +51,38 @@ class InputGuardian:
         headerMessage += "    InputGuardian\r\n"
         headerMessage += "      / (||) \ \r\n"
         headerMessage += "     /\  /\  /\ \r\n"
-        headerMessage += "------------------------"
+        headerMessage += "------------------------------------------"
         print headerMessage
+
+        self.config = ConfigParser.ConfigParser()
+
+        try:
+
+            self.config.read('config.ini');
+        except:
+            print '[!] config.ini not found'
+            print '------------------------------------------'
+
+        # Set configuration from the config.ini file
+        self.xorgLog =  self.readIniVar('xorgLog')
+        self.whitelist = self.readIniVar('whiteList').split(',')
+        self.processPath = self.readIniVar('processPath')
+        self.dependencies = self.readIniVar('dependencies').split(',')
+
+        # Set configuration
+        self.root = os.getcwd() + '/'
+        self.datetimestamp = datetime.datetime.now()
+
+    def readIniVar(self, key):
+        try:
+            return self.config.get('config', key)
+        except:
+            print '[!] key ' + key + 'not found in config.ini'
+            print '------------------------------------------'
+
+        return None
+
+    def watch(self):
 
         while True:
             processList = self.getProcessList()
@@ -80,7 +90,7 @@ class InputGuardian:
             for processID, path in processList.iteritems():
                 processName = self.getProcessName(processID)
 
-                if processName not in whitelist:
+                if processName not in self.whitelist:
                     self.showMessage('Keylogger detected!', 20)
                     exectuableLocation = self.getExecutablePath(processID)
                     call(['kill', processID])
