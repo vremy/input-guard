@@ -30,6 +30,11 @@ try:
 except ImportError:
     print 'Failed to import module ConfigParser'
 
+try:
+    import hashlib
+except ImportError:
+    print 'Failed to import module ConfigParser'
+
 
 class InputGuardian:
 
@@ -65,13 +70,32 @@ class InputGuardian:
 
         # Set configuration from the config.ini file
         self.xorgLog =  self.readIniVar('xorgLog')
-        self.whitelist = self.readIniVar('whiteList').split(',')
+        self.whitelist = self.strToDict(self.readIniVar('whiteList').split(','))
         self.processPath = self.readIniVar('processPath')
-        self.dependencies = self.readIniVar('dependencies').split(',')
 
         # Set configuration
         self.root = os.getcwd() + '/'
         self.datetimestamp = datetime.datetime.now()
+
+    def watch(self):
+
+        while True:
+            processList = self.getProcessList()
+
+            for processID, path in processList.iteritems():
+                processName = self.getProcessName(processID)
+                executableLocation = self.getExecutablePath(processID)
+                md5sum = hashlib.md5(open(executableLocation, 'rb').read()).hexdigest()
+
+                if processName in self.whitelist.keys() and md5sum == self.whitelist[processName]:
+                    continue
+
+                self.showMessage('Keylogger detected!', 20)
+                print hashlib.md5(open(executableLocation, 'rb').read()).hexdigest()
+                call(['kill', processID])
+                message = 'Killed keylogger with processName "' + processName + '" and processID ' + processID + ' at location ' + executableLocation
+                print self.datetimestamp.strftime("%Y-%m-%d %H:%M:%S") + ' | ' + message
+                self.showMessage(message, 60)
 
     def readIniVar(self, key):
         try:
@@ -82,21 +106,12 @@ class InputGuardian:
 
         return None
 
-    def watch(self):
-
-        while True:
-            processList = self.getProcessList()
-
-            for processID, path in processList.iteritems():
-                processName = self.getProcessName(processID)
-
-                if processName not in self.whitelist:
-                    self.showMessage('Keylogger detected!', 20)
-                    exectuableLocation = self.getExecutablePath(processID)
-                    call(['kill', processID])
-                    message = 'Killed keylogger with processName "' + processName + '" and processID ' + processID + ' at location ' + exectuableLocation
-                    print self.datetimestamp.strftime("%Y-%m-%d %H:%M:%S") + ' | ' + message
-                    self.showMessage(message, 60)
+    def strToDict(self, str):
+        dict = {}
+        for processData in str:
+            processData = processData.split(':')
+            dict[processData[0]] = processData[1]
+        return dict
 
     def showMessage(self, message, time):
         call(['notify-send', 'InputGuardian', message, '-i', '/home/net/Code/input-guardian/icons/icon.png', '-u', 'critical', '-t', str(time * 1000) ])
