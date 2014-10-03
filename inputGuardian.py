@@ -33,7 +33,13 @@ except ImportError:
 try:
     import hashlib
 except ImportError:
-    print 'Failed to import module ConfigParser'
+    print 'Failed to import module hashlib'
+
+try:
+    import sys
+except ImportError:
+    print 'Failed to import module sys'
+
 
 
 class InputGuardian:
@@ -77,6 +83,28 @@ class InputGuardian:
         self.root = os.getcwd() + '/'
         self.datetimestamp = datetime.datetime.now()
 
+        if len(sys.argv) > 0:
+
+            if sys.argv[1] == 'fetch':
+                self.fetch()
+
+            if sys.argv[1] == 'watch':
+                self.watch()
+
+    def fetch(self):
+        result = []
+        processList = self.getProcessList()
+
+        for processID in processList:
+            processName = self.getProcessName(processID)
+            executableLocation = self.getExecutablePath(processID)
+            md5sum = hashlib.md5(open(executableLocation, 'rb').read()).hexdigest()
+            result.append(processName + ':' + md5sum)
+
+        self.config.set('config', 'whiteList', ','.join(result))
+        with open('config.ini', 'wb') as configfile:
+            self.config.write(configfile)
+
     def watch(self):
 
         while True:
@@ -107,6 +135,10 @@ class InputGuardian:
         return None
 
     def strToDict(self, str):
+
+        if len(str) == 1 and str[0] == '':
+            return False
+
         dict = {}
         for processData in str:
             processData = processData.split(':')
@@ -158,4 +190,4 @@ class InputGuardian:
                         return str(path.group(0))
 
 inputGuardian = InputGuardian()
-inputGuardian.watch()
+#inputGuardian.watch()
