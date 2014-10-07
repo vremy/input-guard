@@ -54,17 +54,7 @@ class InputGuardian:
     datetimestamp = None
 
     def __init__(self):
-        '''
-        ASCII Header
-        '''
-        headerMessage  = "\r\n         /\ \r\n"
-        headerMessage += "        /  \ \r\n"
-        headerMessage += "    InputGuardian\r\n"
-        headerMessage += "      / (||) \ \r\n"
-        headerMessage += "     /\  /\  /\ \r\n"
-        headerMessage += "------------------------------------------"
-        print headerMessage
-
+        self.printHeader()
         self.config = ConfigParser.ConfigParser()
 
         try:
@@ -91,7 +81,34 @@ class InputGuardian:
             if sys.argv[1] == 'watch':
                 self.watch()
 
+    def printHeader(self):
+        space = ''
+        line  = ''
+        width = ((int(os.popen('stty size', 'r').read().split()[1]) - int(len("--------------------"))) / 2)
+
+        for char in range(0,width):
+            space += ' '
+            line += '-'
+
+        '''
+        ASCII Header
+        '''
+        headerMessage = "\r\n"
+        headerMessage += space + "         /\ \r\n"
+        headerMessage += space + "        /  \ \r\n"
+        headerMessage += space + "    InputGuardian\r\n"
+        headerMessage += space + "      / (||) \ \r\n"
+        headerMessage += space + "     /\  /\  /\ \r\n"
+        headerMessage += line + "--------------------" + line
+        print headerMessage
+
     def fetch(self):
+
+        self.clear()
+        self.printHeader()
+
+        print '[*] Add current processes to the process whitelist'
+
         result = []
         processList = self.getProcessList()
 
@@ -100,12 +117,18 @@ class InputGuardian:
             executableLocation = self.getExecutablePath(processID)
             md5sum = hashlib.md5(open(executableLocation, 'rb').read()).hexdigest()
             result.append(processName + ':' + md5sum)
+            print '[!] Found ' + processName + ' located at ' + executableLocation + ' with md5sum fingerprint ' + md5sum
 
         self.config.set('config', 'whiteList', ','.join(result))
         with open('config.ini', 'wb') as configfile:
             self.config.write(configfile)
 
     def watch(self):
+
+        self.clear()
+        self.printHeader()
+
+        print '[*] Started inputGuard to protect ' + self.getEventPath()
 
         while True:
             processList = self.getProcessList()
@@ -119,10 +142,9 @@ class InputGuardian:
                     continue
 
                 self.showMessage('Keylogger detected!', 20)
-                print hashlib.md5(open(executableLocation, 'rb').read()).hexdigest()
                 call(['kill', processID])
                 message = 'Killed keylogger with processName "' + processName + '" and processID ' + processID + ' at location ' + executableLocation
-                print self.datetimestamp.strftime("%Y-%m-%d %H:%M:%S") + ' | ' + message
+                print '[!] ' + self.datetimestamp.strftime("%Y-%m-%d %H:%M:%S") + ' | ' + message
                 self.showMessage(message, 60)
 
     def readIniVar(self, key):
@@ -147,6 +169,9 @@ class InputGuardian:
 
     def showMessage(self, message, time):
         call(['notify-send', 'InputGuardian', message, '-i', self.root + 'icons/icon.png', '-u', 'critical', '-t', str(time * 1000) ])
+
+    def clear(self):
+        os.system(['clear','cls'][os.name == 'nt'])
 
     def getProcessList(self):
         processListKeyboard = {}
