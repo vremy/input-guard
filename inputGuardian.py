@@ -128,7 +128,7 @@ class InputGuardian:
         self.clear()
         self.printHeader()
 
-        print '[*] Started inputGuard to protect ' + self.getEventPath()
+        print '[*] Started inputGuardian to protect the ' + self.getEventPath() + ' keyboard interface'
 
         while True:
             processList = self.getProcessList()
@@ -143,7 +143,7 @@ class InputGuardian:
 
                 self.showMessage('Keylogger detected!', 20)
                 call(['kill', processID])
-                message = 'Killed keylogger with processName "' + processName + '" and processID ' + processID + ' at location ' + executableLocation
+                message = 'Killed keylogger with processName "' + processName + '" and processID ' + processID + ' located at ' + executableLocation
                 print '[!] ' + self.datetimestamp.strftime("%Y-%m-%d %H:%M:%S") + ' | ' + message
                 self.showMessage(message, 60)
 
