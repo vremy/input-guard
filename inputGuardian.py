@@ -146,7 +146,7 @@ class InputGuardian:
         return dict
 
     def showMessage(self, message, time):
-        call(['notify-send', 'InputGuardian', message, '-i', '/home/net/Code/input-guardian/icons/icon.png', '-u', 'critical', '-t', str(time * 1000) ])
+        call(['notify-send', 'InputGuardian', message, '-i', self.root + 'icons/icon.png', '-u', 'critical', '-t', str(time * 1000) ])
 
     def getProcessList(self):
         processListKeyboard = {}
@@ -190,4 +190,3 @@ class InputGuardian:
                         return str(path.group(0))
 
 inputGuardian = InputGuardian()
-#inputGuardian.watch()
