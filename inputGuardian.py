@@ -71,7 +71,7 @@ class InputGuardian:
 
         # Set configuration
         self.root = os.getcwd() + '/'
-        self.datetimestamp = datetime.datetime.now()
+        self.datetimestamp = datetime.datetime
 
         if len(sys.argv) > 0:
 
@@ -144,7 +144,7 @@ class InputGuardian:
                 self.showMessage('Keylogger detected!', 20)
                 call(['kill', processID])
                 message = 'Killed keylogger with processName "' + processName + '" and processID ' + processID + ' located at ' + executableLocation
-                print '[!] ' + self.datetimestamp.strftime("%Y-%m-%d %H:%M:%S") + ' | ' + message
+                print '[!] ' + self.datetimestamp.now().strftime("%Y-%m-%d %H:%M:%S") + ' | ' + message
                 self.showMessage(message, 60)
 
     def readIniVar(self, key):
