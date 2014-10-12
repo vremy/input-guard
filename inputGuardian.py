@@ -41,7 +41,6 @@ except ImportError:
     print 'Failed to import module sys'
 
 
-
 class InputGuardian:
 
     config = None
@@ -115,9 +114,9 @@ class InputGuardian:
         for processID in processList:
             processName = self.getProcessName(processID)
             executableLocation = self.getExecutablePath(processID)
-            md5sum = hashlib.md5(open(executableLocation, 'rb').read()).hexdigest()
-            result.append(processName + ':' + md5sum)
-            print '[!] Found ' + processName + ' located at ' + executableLocation + ' with md5sum fingerprint ' + md5sum
+            sha256sum = hashlib.sha256(open(executableLocation, 'rb').read()).hexdigest()
+            result.append(processName + ':' + sha256sum)
+            print '[!] Found ' + processName + ' located at ' + executableLocation + ' with sha256sum fingerprint ' + sha256sum
 
         self.config.set('config', 'whiteList', ','.join(result))
         with open('config.ini', 'wb') as configfile:
@@ -136,9 +135,8 @@ class InputGuardian:
             for processID, path in processList.iteritems():
                 processName = self.getProcessName(processID)
                 executableLocation = self.getExecutablePath(processID)
-                md5sum = hashlib.md5(open(executableLocation, 'rb').read()).hexdigest()
-
-                if processName in self.whitelist.keys() and md5sum == self.whitelist[processName]:
+                sha256sum = hashlib.sha256(open(executableLocation, 'rb').read()).hexdigest()
+                if processName in self.whitelist.keys() and sha256sum == self.whitelist[processName]:
                     continue
 
                 self.showMessage('Keylogger detected!', 20)
@@ -206,7 +204,6 @@ class InputGuardian:
         return os.path.realpath('/proc/' + processID + '/exe')
 
     def getEventPath(self):
-        result = False
         with open(self.xorgLog, 'r') as content:
             for line in content:
                 if line.find('evdev') != -1 and line.find('keyboard') != -1:
