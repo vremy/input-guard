@@ -1,44 +1,19 @@
 #!/usr/bin/env python 
+import traceback
 
 try:
     import os
-except ImportError:
-    print 'Failed to import module os'
-
-try:
     import re
-except ImportError:
-    print 'Failed to import module re'
-
-try:
     from subprocess import call
-except ImportError:
-    print 'Failed to import module call'
-
-try:
     import datetime
-except ImportError:
-    print 'Failed to import module datetime'
-
-try:
     from random import randrange
-except ImportError:
-    print 'Failed to import module randrange'
-
-try:
     import ConfigParser
-except ImportError:
-    print 'Failed to import module ConfigParser'
-
-try:
     import hashlib
-except ImportError:
-    print 'Failed to import module hashlib'
-
-try:
     import sys
+    from evdev import InputDevice, list_devices
 except ImportError:
-    print 'Failed to import module sys'
+    print 'Failed to import module' + traceback.format_exc()
+
 
 
 class InputGuardian:
@@ -51,13 +26,15 @@ class InputGuardian:
 
     root = None
     datetimestamp = None
+    eventPath = None
 
     def __init__(self):
+
+        call('clear')
         self.printHeader()
         self.config = ConfigParser.ConfigParser()
 
         try:
-
             self.config.read('config.ini');
         except:
             print '[!] config.ini not found'
@@ -72,19 +49,24 @@ class InputGuardian:
         self.root = os.getcwd() + '/'
         self.datetimestamp = datetime.datetime
 
-        if len(sys.argv) > 0:
-
+        if len(sys.argv) > 1:
             if sys.argv[1] == 'fetch':
                 self.fetch()
 
             if sys.argv[1] == 'watch':
                 self.watch()
+        else:
+            print '[!] Provide a command to execute'
+            print '[!] Example: ./input-guardian.py fetch'
+            print '[!] Example: ./input-guardian.py watch'
+
 
     def printHeader(self):
         space = ''
         line  = ''
         width = ((int(os.popen('stty size', 'r').read().split()[1]) - int(len("--------------------"))) / 2)
 
+        #
         for char in range(0,width):
             space += ' '
             line += '-'
@@ -115,6 +97,10 @@ class InputGuardian:
             processName = self.getProcessName(processID)
             executableLocation = self.getExecutablePath(processID)
             sha256sum = hashlib.sha256(open(executableLocation, 'rb').read()).hexdigest()
+            #print processName
+            if processName == None:
+                print 'Fail: ' + processID
+            #print sha256sum
             result.append(processName + ':' + sha256sum)
             print '[!] Found ' + processName + ' located at ' + executableLocation + ' with sha256sum fingerprint ' + sha256sum
 
@@ -127,7 +113,7 @@ class InputGuardian:
         self.clear()
         self.printHeader()
 
-        print '[*] Started inputGuardian to protect the ' + self.getEventPath() + ' keyboard interface'
+        print '[*] Started inputGuardian to protect the ' + self.eventPath + ' keyboard interface'
 
         while True:
             processList = self.getProcessList()
@@ -141,9 +127,9 @@ class InputGuardian:
 
                 self.showMessage('Keylogger detected!', 20)
                 call(['kill', processID])
-                message = 'Killed keylogger with processName "' + processName + '" and processID ' + processID + ' located at ' + executableLocation
-                print '[!] ' + self.datetimestamp.now().strftime("%Y-%m-%d %H:%M:%S") + ' | ' + message
-                self.showMessage(message, 60)
+                #message = 'Killed keylogger with processName "' + processName + '" and processID ' + processID + ' located at ' + executableLocation
+                #print '[!] ' + self.datetimestamp.now().strftime("%Y-%m-%d %H:%M:%S") + ' | ' + message
+                #self.showMessage(message, 60)
 
     def readIniVar(self, key):
         try:
@@ -174,6 +160,7 @@ class InputGuardian:
     def getProcessList(self):
         processListKeyboard = {}
         processListAll = os.listdir('/proc')
+        eventPath = self.eventPath
 
         for processID in sorted(processListAll):
 
@@ -190,7 +177,7 @@ class InputGuardian:
                         link = os.readlink(os.path.join(fdDirectory, processDirectory))
                     except OSError:
                         continue
-                    if link == self.getEventPath():
+                    if link == eventPath:
                         processListKeyboard[processID] = link
         return processListKeyboard
 
@@ -204,11 +191,9 @@ class InputGuardian:
         return os.path.realpath('/proc/' + processID + '/exe')
 
     def getEventPath(self):
-        with open(self.xorgLog, 'r') as content:
-            for line in content:
-                if line.find('evdev') != -1 and line.find('keyboard') != -1:
-                    path = re.search(r'\/dev\/input\/event[0-9]', line)
-                    if path:
-                        return str(path.group(0))
+        devices = [InputDevice(fn) for fn in list_devices()]
+        for dev in devices:
+            if dev.name.find('keyboard') != -1:
+                return dev.fn
 
 inputGuardian = InputGuardian()
